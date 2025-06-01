@@ -1,4 +1,4 @@
-package com.Animals;
+package com.animal;
 
 public class AnimalController {
     
