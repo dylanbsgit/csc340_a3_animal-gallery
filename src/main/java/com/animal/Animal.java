@@ -3,6 +3,7 @@ package com.animal;
 import jakarta.persistence.*;
 
 @Entity
+@Table(name = "animals")
 public class Animal {
 
     @Id
@@ -16,22 +17,24 @@ public class Animal {
     private String description;
 
     @Column(nullable = false)
-    private double age;
+    private int age;
 
     @Column(nullable = false)
     private String favoriteFood;
 
-    // Constructors
+    @Column(nullable = false)
+    private String habitat;
+
     public Animal() {}
 
-    public Animal(String name, String description, double age, String favoriteFood) {
+    public Animal(String name, String description, int age, String favoriteFood, String habitat) {
         this.name = name;
         this.description = description;
         this.age = age;
         this.favoriteFood = favoriteFood;
+        this.habitat = habitat;
     }
 
-    // Getters and Setters
     public Long getAnimalId() {
         return animalId;
     }
@@ -56,11 +59,11 @@ public class Animal {
         this.description = description;
     }
 
-    public double getAge() {
+    public int getAge() {
         return age;
     }
 
-    public void setAge(double age) {
+    public void setAge(int age) {
         this.age = age;
     }
 
@@ -70,5 +73,13 @@ public class Animal {
 
     public void setFavoriteFood(String favoriteFood) {
         this.favoriteFood = favoriteFood;
+    }
+
+    public String getHabitat() {
+        return habitat;
+    }
+
+    public void setHabitat(String habitat) {
+        this.habitat = habitat;
     }
 }

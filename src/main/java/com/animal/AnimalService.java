@@ -3,8 +3,7 @@ package com.animal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class AnimalService {
@@ -24,8 +23,8 @@ public class AnimalService {
         return animalRepository.findById(id);
     }
 
-    public List<Animal> getAnimalsByName(String name) {
-        return animalRepository.findByName(name);
+    public List<Animal> getAnimalsByNameContains(String name) {
+        return animalRepository.findByNameContaining(name);
     }
 
     public List<Animal> getAnimalsByFavoriteFood(String favoriteFood) {
@@ -38,5 +37,15 @@ public class AnimalService {
 
     public void deleteAnimal(Long id) {
         animalRepository.deleteById(id);
+    }
+
+    public List<Animal> getAnimalsByHabitat(String habitat) {
+        return animalRepository.findByHabitat(habitat);
+    }
+    
+    public List<Animal> getAnimalsByAge(int age) {
+        return animalRepository.findAll().stream()
+                .filter(animal -> animal.getAge() == age)
+                .toList();
     }
 }
