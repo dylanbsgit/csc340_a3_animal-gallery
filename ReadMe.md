@@ -1,214 +1,135 @@
-# Animal Gallery API
+# Animal Gallery
 
-Simple CRUD API for Animal Objects with JPA (Hibernate)
+A Spring Boot MVC web application for managing an interactive animal gallery with CRUD operations, image uploads, and search functionality.
 
-## Getting Started
+## Get the project
+- **clone**
+  ```bash
+  git clone https://github.com/dylanbsgit/csc340_a3_animal-gallery.git
+  ```
+- OR download zip.
 
-### Prerequisites
-- Java 21
-- Maven
-- Neon.tech PostgreSQL database
+## Open the project in VS Code
+- This project is built to run with **jdk 17** or later.
 
-### Installation
-1. Clone the repository
-```bash
-git clone https://github.com/dylanbsgit/csc340_a3_animal-gallery.git
-```
+## Dependencies
+[Dependencies](pom.xml) include Spring Boot Web, JPA, H2 Database, and FreeMarker, in addition to the usual. JPA handles the persistence, H2 is the in-memory database used for development, FreeMarker generates HTML templates.
 
-2. Open the project in your IDE
-
-3. Configure your database connection in `src/main/resources/application.properties`:
+## Configuration 
+The `application.properties` file contains configuration for the app:
 ```properties
-spring.datasource.url="YOUR NEON URL KEY HERE"
+# File upload size limits
+spring.servlet.multipart.max-file-size=10MB
+spring.servlet.multipart.max-request-size=10MB
+
+# H2 Database Configuration
+spring.datasource.url=jdbc:h2:mem:testdb
+spring.h2.console.enabled=true
 ```
 
-4. Run the application
-```bash
-mvn spring-boot:run
-```
+## Build and Run
+- Build and run the main class. You should see the H2 database initialized.
+- Access the application at: `http://localhost:8080/animals`
 
-The application will start on `http://localhost:8080`
+## Database Access
+- H2 Console available at: `http://localhost:8080/h2-console`
+- JDBC URL: `jdbc:h2:mem:testdb`
+- Username: `sa`
+- Password: (leave blank)
 
-## API Endpoints
+## ORM Concepts
+We are using ORM (Object-Relational Mapping) to deal with databases. This is a technique that allows us to interact with a relational database using object-oriented programming principles.
 
-Base URL: `http://localhost:8080/api/animals`
+- **JPA** (Jakarta Persistence, formerly Java Persistence API) is a specification that defines ORM standards in Java. It provides an abstraction layer for ORM frameworks.
+- **Hibernate**: Hibernate is a popular ORM framework that implements JPA. It simplifies database operations by mapping Java objects to database tables and handling queries efficiently.
 
-### Get All Animals
-**GET** `/`
+## Architecture
 
-Returns a list of all animals in the database.
+### [Entity](src/main/java/com/animal/Animal.java)
+- The `Animal` class is annotated as an `@Entity`. This maps class attributes to database tables and SQL types.
+- Any Entity must have at least one attribute annotated as an `@Id`. In our case it's the `animalId` attribute.
+  - We use an autogeneration strategy for the ID using `@GeneratedValue(strategy = GenerationType.IDENTITY)`.
+  - For this reason, we added a constructor to make an Animal without an ID.
+- An Entity must have a no-argument constructor.
+- Fields include: `name`, `description`, `habitat`, `favoriteFood`, `age`, `behavior`, `imageFilename`.
 
-**Response:**
-```json
-[
-  {
-    "animalId": 1,
-    "name": "Leo",
-    "description": "A majestic lion",
-    "age": 5,
-    "favoriteFood": "Meat",
-    "habitat": "Savanna"
-  },
-  {
-    "animalId": 2,
-    "name": "Bella",
-    "description": "A playful dolphin",
-    "age": 3,
-    "favoriteFood": "Fish",
-    "habitat": "Ocean"
-  }
-]
-```
+### [Repository](src/main/java/com/animal/AnimalRepository.java)
+- We extend the JPA Repository that comes with prebuilt database operations such as select all, select by id, insert, delete, etc.
+- Annotated as a `@Repository`.
+- Parametrized using our object and its ID type: `public interface AnimalRepository extends JpaRepository<Animal, Long>`
+- Custom queries for search functionality:
+  - `findByNameContainingIgnoreCase(String name)` - Search animals by name
+  - `findByFavoriteFoodContainingIgnoreCase(String favoriteFood)` - Filter by favorite food
 
-### Get Animal by ID
-**GET** `/{animalId}`
+### [Service](src/main/java/com/animal/AnimalService.java)
+- Annotated as a `@Service`.
+- Acts as go-between from controller to database. Defines functions needed from the repository.
+- Functions include standard JPA operations (save, delete, findAll) and custom operations (searchByName, searchByFavoriteFood).
+- The Repository class is `@Autowired`. Do not use a constructor to make a Repository object.
+- Includes `initializeData()` method to populate database with sample animals.
 
-Returns a specific animal by its ID.
+### [Controller](src/main/java/com/animal/AnimalController.java)
+- This is a `@Controller` (not `@RestController`). This MVC Controller returns views instead of objects.
+- All methods return view names. The template engine finds the template with this name and renders a view.
+- Returns `"redirect:/link/to/redirect"` when there's no view attached to an action (e.g., redirecting after delete).
+- Model attributes added using `model.addAttribute("animalsList", service.getAllAnimals())`.
+- The Service class is `@Autowired`. Do not use a constructor.
+- **File Upload Handling**: Supports `MultipartFile` for image uploads with custom naming convention.
 
-**Path Parameters:**
-- `animalId` (Long) - REQUIRED
+## Views
+- All views live in `src/main/resources/templates`.
+- These are `.ftlh` files (FreeMarker templates). They work like HTML but are used by the server to append data from the database.
+- **VS Code Configuration**: Associate `.ftlh` files with HTML:
+  - Settings (Ctrl+comma) → Search "association" → Add Item → Key: `*.ftlh`, Value: `html` → OK
 
-**Response:**
-```json
-{
-  "animalId": 1,
-  "name": "Leo",
-  "description": "A majestic lion",
-  "age": 5,
-  "favoriteFood": "Meat",
-  "habitat": "Savanna"
-}
-```
+### Template Usage
+- **animal-list.ftlh**: "Loop through Animal list and display each Animal"
+  ```html
+  <#list animalsList as animal>
+    <div class="animal-card">
+      <div class="animal-name">${animal.name}</div>
+    </div>
+  </#list>
+  ```
+- **Forms**: For any form that sends POST requests, the input `name` attribute should match the data field:
+  ```html
+  <input type="text" name="name" placeholder="Animal Name"/>
+  <input type="file" name="imageFile" accept="image/*"/>
+  ```
 
-### Search Animals by Name
-**GET** `/search`
+### View Mappings
+- Remember that any view must have a corresponding mapping. Any web page displayed MUST have a mapping in a controller.
+- Forms have separate GET mappings to display the form and POST mappings to process the form data.
+- **File Upload Forms**: Use `enctype="multipart/form-data"` for image uploads.
 
-Returns animals whose names contain the specified string.
+## Key Features
 
-**Query Parameters:**
-- `name` (String) - REQUIRED
+### CRUD Operations
+- **Create**: `GET /animals/new` (show form), `POST /animals/new` (process form)
+- **Read**: `GET /animals` (list all), `GET /animals/{id}` (show details)
+- **Update**: `GET /animals/edit/{id}` (show form), `POST /animals/update` (process form)
+- **Delete**: `GET /animals/delete/{id}` (delete and redirect)
 
-**Example:** `/search?name=Leo`
+### Image Management
+- **File Upload**: Images uploaded via multipart forms
+- **Custom Naming**: Images saved as `AnimalName_ID.extension` (e.g., `Red_Panda5.jpg`)
+- **Storage**: Images stored in `src/main/resources/static/Animal Pictures/`
+- **Display**: Images displayed on both list and detail views
 
-**Response:**
-```json
-[
-  {
-    "animalId": 1,
-    "name": "Leo",
-    "description": "A majestic lion",
-    "age": 5,
-    "favoriteFood": "Meat",
-    "habitat": "Savanna"
-  }
-]
-```
+### Search Functionality
+- **Name Search**: `GET /animals/search?name={query}`
+- **Food Filter**: `GET /animals/category?favoriteFood={query}`
 
-### Get Animals by Favorite Food
-**GET** `/category`
+### Data Management
+- **Initialize Data**: `GET /animals/init-data` - Populate with sample animals
+- **Clear Data**: `GET /animals/clear-data` - Remove all animals
 
-Returns animals that have the specified favorite food.
+## Important Notes
+- **Web Browsers**: Only allow GET and POST requests (unless using JavaScript)! We use POST for updates and GET for deletes.
+- **Form Data**: When getting data from forms, we do not need the `@RequestBody` annotation.
+- **Save vs Update**: Hibernate uses the same method for both. If an entity exists it gets updated, else it gets created. This is why we attach an ID to our update form.
+- **Server Port**: Application runs on `http://localhost:8080`
+- **File Access**: Images must be accessed through the server, not as direct files.
 
-**Query Parameters:**
-- `favoriteFood` (String) - REQUIRED
-
-**Example:** `/category?favoriteFood=Fish`
-
-**Response:**
-```json
-[
-  {
-    "animalId": 2,
-    "name": "Bella",
-    "description": "A playful dolphin",
-    "age": 3,
-    "favoriteFood": "Fish",
-    "habitat": "Ocean"
-  }
-]
-```
-
-### Create New Animal
-**POST** `/`
-
-Creates a new animal entry.
-
-**Request Body:**
-```json
-{
-  "name": "Max",
-  "description": "A friendly elephant",
-  "age": 12,
-  "favoriteFood": "Leaves",
-  "habitat": "Forest"
-}
-```
-
-**Response:**
-```json
-{
-  "animalId": 3,
-  "name": "Max",
-  "description": "A friendly elephant",
-  "age": 12,
-  "favoriteFood": "Leaves",
-  "habitat": "Forest"
-}
-```
-
-### Update Animal
-**PUT** `/{animalId}`
-
-Updates an existing animal.
-
-**Path Parameters:**
-- `animalId` (Long) - REQUIRED
-
-**Request Body:**
-```json
-{
-  "name": "Max Updated",
-  "description": "An updated friendly elephant",
-  "age": 13,
-  "favoriteFood": "Fruits",
-  "habitat": "Jungle"
-}
-```
-
-**Response:**
-```json
-{
-  "animalId": 3,
-  "name": "Max Updated",
-  "description": "An updated friendly elephant",
-  "age": 13,
-  "favoriteFood": "Fruits",
-  "habitat": "Jungle"
-}
-```
-
-### Delete Animal
-**DELETE** `/{animalId}`
-
-Deletes an existing animal.
-
-## Technologies Used
-
-- Spring Boot
-- Spring Data JPA
-- Hibernate
-- PostgreSQL (Neon.tech)
-- Maven
-
-## Database Schema
-
-The application uses a single `animals` table with the following structure:
-
-| Column | Type | Description |
-|--------|------|-------------|
-| animalId | Long | Primary key (auto-generated) |
-| name | String | Animal's name |
-| description | String | Description of the animal |
-| age | Integer | Animal's age |
-| favoriteFood | String | Animal's favorite food |
-| habitat | String | Animal's natural habitat |
+## On the browser go to:
+`http://localhost:8080/animals`
