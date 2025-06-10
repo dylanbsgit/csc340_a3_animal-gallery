@@ -1,72 +1,179 @@
 package com.animal;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 
-@RestController
-@RequestMapping("/api/animals")
+@Controller
+@RequestMapping("/animals")
 public class AnimalController {
 
-    private final AnimalService animalService;
-
     @Autowired
-    public AnimalController(AnimalService animalService) {
-        this.animalService = animalService;
+    private AnimalService animalService;
+
+    private final String UPLOAD_DIR = "src/main/resources/static/Animal Pictures/";
+
+    // Display list of all animals
+    @GetMapping("")
+    public String listAnimals(Model model) {
+        List<Animal> animals = animalService.getAllAnimals();
+        model.addAttribute("animalsList", animals);
+        return "animal-list";
     }
 
-    @GetMapping
-    public List<Animal> getAllAnimals() {
-        return animalService.getAllAnimals();
-    }
-
+    // Display single animal details
     @GetMapping("/{id}")
-    public ResponseEntity<Animal> getAnimalById(@PathVariable Long id) {
+    public String showAnimal(@PathVariable Long id, Model model) {
         Optional<Animal> animal = animalService.getAnimalById(id);
-        return animal.map(ResponseEntity::ok)
-                     .orElse(ResponseEntity.notFound().build());
-    }
-
-    @PostMapping
-    public Animal addAnimal(@RequestBody Animal animal) {
-        return animalService.saveAnimal(animal);
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<Animal> updateAnimal(@PathVariable Long id, @RequestBody Animal updatedAnimal) {
-        Optional<Animal> existingAnimal = animalService.getAnimalById(id);
-        if (existingAnimal.isPresent()) {
-            Animal animal = existingAnimal.get();
-            animal.setName(updatedAnimal.getName());
-            animal.setDescription(updatedAnimal.getDescription());
-            animal.setAge(updatedAnimal.getAge());
-            animal.setFavoriteFood(updatedAnimal.getFavoriteFood());
-            return ResponseEntity.ok(animalService.saveAnimal(animal));
+        if (animal.isPresent()) {
+            model.addAttribute("animal", animal.get());
+            return "animal-details";
         } else {
-            return ResponseEntity.notFound().build();
+            return "redirect:/animals";
         }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteAnimal(@PathVariable Long id) {
-        if (animalService.getAnimalById(id).isPresent()) {
-            animalService.deleteAnimal(id);
-            return ResponseEntity.noContent().build();
+    // Show create animal form
+    @GetMapping("/new")
+    public String showCreateForm(Model model) {
+        model.addAttribute("animal", new Animal());
+        return "animal-create";
+    }
+
+    // Handle create animal form submission with file upload
+    @PostMapping("/new")
+    public String createAnimal(@ModelAttribute Animal animal, 
+                              @RequestParam("imageFile") MultipartFile imageFile) {
+        
+        // Save animal first to get the generated ID
+        Animal savedAnimal = animalService.saveAnimal(animal);
+        
+        // Handle file upload if file is provided (now we have the ID)
+        if (!imageFile.isEmpty()) {
+            try {
+                String filename = saveUploadedFile(imageFile, savedAnimal.getName(), savedAnimal.getAnimalId());
+                savedAnimal.setImageFilename("Animal Pictures/" + filename);
+                // Save again with the updated filename
+                animalService.saveAnimal(savedAnimal);
+            } catch (IOException e) {
+                // If file upload fails, continue without image
+                System.err.println("Failed to upload image: " + e.getMessage());
+            }
+        }
+        
+        return "redirect:/animals/" + savedAnimal.getAnimalId();
+    }
+
+    // Show edit animal form
+    @GetMapping("/edit/{id}")
+    public String showEditForm(@PathVariable Long id, Model model) {
+        Optional<Animal> animal = animalService.getAnimalById(id);
+        if (animal.isPresent()) {
+            model.addAttribute("animal", animal.get());
+            return "animal-update";
         } else {
-            return ResponseEntity.notFound().build();
+            return "redirect:/animals";
         }
     }
 
-    @GetMapping("/category")
-    public List<Animal> getAnimalsByCategory(@RequestParam String favoriteFood) {
-        return animalService.getAnimalsByFavoriteFood(favoriteFood);
+    // Handle update animal form submission with file upload
+    @PostMapping("/update")
+    public String updateAnimal(@ModelAttribute Animal animal,
+                              @RequestParam("imageFile") MultipartFile imageFile) {
+        
+        // Handle file upload if new file is provided
+        if (!imageFile.isEmpty()) {
+            try {
+                String filename = saveUploadedFile(imageFile, animal.getName(), animal.getAnimalId());
+                animal.setImageFilename("Animal Pictures/" + filename);
+            } catch (IOException e) {
+                // If file upload fails, keep existing image
+                System.err.println("Failed to upload image: " + e.getMessage());
+                // Get existing animal to preserve current image filename
+                Optional<Animal> existingAnimal = animalService.getAnimalById(animal.getAnimalId());
+                if (existingAnimal.isPresent()) {
+                    animal.setImageFilename(existingAnimal.get().getImageFilename());
+                }
+            }
+        } else {
+            // No new file uploaded, keep existing image
+            Optional<Animal> existingAnimal = animalService.getAnimalById(animal.getAnimalId());
+            if (existingAnimal.isPresent()) {
+                animal.setImageFilename(existingAnimal.get().getImageFilename());
+            }
+        }
+        
+        animalService.saveAnimal(animal);
+        return "redirect:/animals/" + animal.getAnimalId();
     }
 
+    // Helper method to save uploaded files with custom naming
+    private String saveUploadedFile(MultipartFile file, String animalName, Long animalId) throws IOException {
+        // Create upload directory if it doesn't exist
+        Path uploadPath = Paths.get(UPLOAD_DIR);
+        if (!Files.exists(uploadPath)) {
+            Files.createDirectories(uploadPath);
+        }
+        
+        // Get file extension
+        String originalFilename = file.getOriginalFilename();
+        String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        
+        // Create filename using animal name + ID (replace spaces with underscores)
+        String cleanAnimalName = animalName.replaceAll("\\s+", "_"); // Replace spaces with underscores
+        String customFilename = cleanAnimalName + animalId + extension;
+        
+        // Save file
+        Path filePath = uploadPath.resolve(customFilename);
+        Files.copy(file.getInputStream(), filePath);
+        
+        return customFilename;
+    }
+
+    // Handle animal deletion
+    @GetMapping("/delete/{id}")
+    public String deleteAnimal(@PathVariable Long id) {
+        animalService.deleteAnimal(id);
+        return "redirect:/animals";
+    }
+
+    // Handle search by name
     @GetMapping("/search")
-    public List<Animal> getAnimalsByNameContains(@RequestParam String name) {
-        return animalService.getAnimalsByNameContains(name);
+    public String searchByName(@RequestParam String name, Model model) {
+        List<Animal> animals = animalService.searchByName(name);
+        model.addAttribute("animalsList", animals);
+        model.addAttribute("searchTerm", name);
+        return "animal-list";
+    }
+
+    // Handle search by favorite food
+    @GetMapping("/category")
+    public String searchByFavoriteFood(@RequestParam String favoriteFood, Model model) {
+        List<Animal> animals = animalService.searchByFavoriteFood(favoriteFood);
+        model.addAttribute("animalsList", animals);
+        model.addAttribute("searchTerm", favoriteFood);
+        return "animal-list";
+    }
+
+    // Clear all data
+    @GetMapping("/clear-data")
+    public String clearAllData() {
+        animalService.clearAllData();
+        return "redirect:/animals";
+    }
+
+    // Initialize test data
+    @GetMapping("/init-data")
+    public String initializeData() {
+        animalService.initializeData();
+        return "redirect:/animals";
     }
 }

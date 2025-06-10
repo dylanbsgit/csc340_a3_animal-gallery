@@ -1,0 +1,74 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background: #ffe3b0;
+}
+
+nav {
+    text-align: center;
+    margin: 20px 0;
+}
+
+nav a {
+    display: inline-block;
+    padding: 10px 20px;
+    margin: 0 5px;
+    background-color: #C70039;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+nav a:hover {
+    background-color: #900C3F;
+    cursor: pointer;
+}
+
+h1 {
+    text-align: center;
+}
+
+.gallery {
+    text-align: center;
+}
+
+.animal-card-double {
+    background: #e9e9e9;
+    border: 1px solid gray;
+    display: inline-block;
+    margin: 10px;
+    padding: 10px;
+    width: 400px;
+}
+
+.animal-card {
+    background: #e9e9e9;
+    border: 1px solid gray;
+    display: inline-block;
+    margin: 10px;
+    padding: 10px;
+    width: 200px;
+}
+
+.animal-card-double img {
+    width: 180px;
+    height: 140px;
+}
+
+.animal-card img {
+    width: 180px;
+    height: 140px;
+}
+
+.animal-name {
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+.animal-description {
+    margin-top: 5px;
+    font-size: 14px;
+    color: #555;
+}
