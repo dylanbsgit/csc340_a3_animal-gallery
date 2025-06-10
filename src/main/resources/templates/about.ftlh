@@ -13,7 +13,7 @@
     <nav>
         <a href="/animals">Home</a>
         <a href="/about">About</a>
-        <a href="/animals">Details</a>
+        <a href="/animals">Animals</a>
     </nav>
     <h1>About</h1>
     <div class="gallery">

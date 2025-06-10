@@ -15,7 +15,7 @@
     <h1>Update Animal</h1>
     
     <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-        <form action="/animals/update" method="post" style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
+        <form action="/animals/update" method="post" enctype="multipart/form-data" style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
             
             <!-- Hidden field for animal ID -->
             <input type="hidden" name="animalId" value="${animal.animalId}">
@@ -48,6 +48,23 @@
                 <label for="age" style="display: block; margin-bottom: 5px; font-weight: bold;">Age:</label>
                 <input type="number" id="age" name="age" value="${animal.age!""}" min="0"
                        style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            
+            <!-- Image upload field -->
+            <div style="margin-bottom: 15px;">
+                <label for="imageFile" style="display: block; margin-bottom: 5px; font-weight: bold;">Upload New Image (optional):</label>
+                <input type="file" id="imageFile" name="imageFile" accept="image/*"
+                       style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                <#if animal.imageFilename??>
+                    <small style="color: #666; font-size: 12px;">Current image: ${animal.imageFilename}</small>
+                </#if>
+            </div>
+            
+            <!-- Behavior field -->
+            <div style="margin-bottom: 15px;">
+                <label for="behavior" style="display: block; margin-bottom: 5px; font-weight: bold;">Behavior:</label>
+                <textarea id="behavior" name="behavior" rows="3" placeholder="Describe the animal's behavior patterns..."
+                          style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">${animal.behavior!""}</textarea>
             </div>
             
             <div style="text-align: center; margin-top: 20px;">

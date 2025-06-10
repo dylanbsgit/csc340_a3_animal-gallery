@@ -26,6 +26,17 @@
             <!-- Loop through each animal from the database -->
             <#list animalsList as animal>
                 <div class="animal-card" onclick="window.location.href='/animals/${animal.animalId}'">
+                    
+                    <!-- Display animal image -->
+                    <#if animal.imageFilename??>
+                        <img src="/${animal.imageFilename}" alt="${animal.name}" 
+                             style="width: 100%; height: 200px; object-fit: cover; border-radius: 4px; margin-bottom: 10px;"
+                             onerror="this.src='/Animal Pictures/default.png'">
+                    <#else>
+                        <img src="/Animal Pictures/default.png" alt="${animal.name}" 
+                             style="width: 100%; height: 200px; object-fit: cover; border-radius: 4px; margin-bottom: 10px;">
+                    </#if>
+                    
                     <div class="animal-name">${animal.name}</div>
                     <div class="animal-description">${animal.description!"No description available"}</div>
                     

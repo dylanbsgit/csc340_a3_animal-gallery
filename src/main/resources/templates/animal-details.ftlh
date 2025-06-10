@@ -14,6 +14,17 @@
     <h1>${animal.name} Details</h1>
     <div class="gallery">
         <div class="animal-card-double">
+            
+            <!-- Display animal image -->
+            <#if animal.imageFilename??>
+                <img src="/${animal.imageFilename}" alt="${animal.name}" 
+                     style="width: 100%; max-width: 400px; height: 300px; object-fit: cover; border-radius: 8px; margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;"
+                     onerror="this.src='/Animal Pictures/default.png'">
+            <#else>
+                <img src="/Animal Pictures/default.png" alt="${animal.name}" 
+                     style="width: 100%; max-width: 400px; height: 300px; object-fit: cover; border-radius: 8px; margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
+            </#if>
+            
             <div class="animal-name">${animal.name}</div>
             
             <#if animal.habitat??>
@@ -36,12 +47,17 @@
                 ${animal.age} years old</div>
             </#if>
             
+            <#if animal.behavior??>
+            <div class="animal-description"><b>Behavior:</b> 
+                ${animal.behavior}</div>
+            <#else>
+            <div class="animal-description"><b>Behavior:</b> 
+                Each animal has unique behavioral patterns that make them fascinating to observe.</div>
+            </#if>
+            
             <!-- You can add more hardcoded sections if needed -->
             <div class="animal-description"><b>Care & Wellness:</b> 
                 This animal thrives in a carefully maintained environment that mimics its natural habitat.</div>
-            
-            <div class="animal-description"><b>Behavior:</b> 
-                Each animal has unique behavioral patterns that make them fascinating to observe.</div>
                 
             <!-- Action buttons for editing/deleting -->
             <div style="margin-top: 20px; text-align: center; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
