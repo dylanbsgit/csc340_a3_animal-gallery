@@ -1,72 +1,114 @@
 package com.animal;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
-@RestController
-@RequestMapping("/api/animals")
+@Controller
+@RequestMapping("/animals")
 public class AnimalController {
 
-    private final AnimalService animalService;
-
     @Autowired
-    public AnimalController(AnimalService animalService) {
-        this.animalService = animalService;
-    }
+    private AnimalService animalService;
 
+    // Show all animals
     @GetMapping
-    public List<Animal> getAllAnimals() {
-        return animalService.getAllAnimals();
+    public String listAnimals(Model model) {
+        List<Animal> animals = animalService.getAllAnimals();
+        model.addAttribute("animalsList", animals);
+        return "animal-list";
     }
 
+    // Show individual animal
     @GetMapping("/{id}")
-    public ResponseEntity<Animal> getAnimalById(@PathVariable Long id) {
-        Optional<Animal> animal = animalService.getAnimalById(id);
-        return animal.map(ResponseEntity::ok)
-                     .orElse(ResponseEntity.notFound().build());
+    public String showAnimal(@PathVariable Long id, Model model) {
+        Animal animal = animalService.findById(id);
+        model.addAttribute("animal", animal);
+        return "animal-details";
     }
 
-    @PostMapping
-    public Animal addAnimal(@RequestBody Animal animal) {
-        return animalService.saveAnimal(animal);
+    // Show form to create new animal
+    @GetMapping("/new")
+    public String showCreateForm(Model model) {
+        model.addAttribute("animal", new Animal());
+        return "animal-create";
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Animal> updateAnimal(@PathVariable Long id, @RequestBody Animal updatedAnimal) {
-        Optional<Animal> existingAnimal = animalService.getAnimalById(id);
-        if (existingAnimal.isPresent()) {
-            Animal animal = existingAnimal.get();
-            animal.setName(updatedAnimal.getName());
-            animal.setDescription(updatedAnimal.getDescription());
-            animal.setAge(updatedAnimal.getAge());
-            animal.setFavoriteFood(updatedAnimal.getFavoriteFood());
-            return ResponseEntity.ok(animalService.saveAnimal(animal));
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+    // Handle form submission to create new animal
+    @PostMapping("/new")
+    public String createAnimal(@ModelAttribute Animal animal) {
+        animalService.saveAnimal(animal);
+        return "redirect:/animals";
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteAnimal(@PathVariable Long id) {
-        if (animalService.getAnimalById(id).isPresent()) {
-            animalService.deleteAnimal(id);
-            return ResponseEntity.noContent().build();
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+    // Show form to edit animal
+    @GetMapping("/edit/{id}")
+    public String editAnimal(@PathVariable Long id, Model model) {
+        Animal animal = animalService.findById(id);
+        model.addAttribute("animal", animal);
+        return "animal-update";
     }
 
-    @GetMapping("/category")
-    public List<Animal> getAnimalsByCategory(@RequestParam String favoriteFood) {
-        return animalService.getAnimalsByFavoriteFood(favoriteFood);
+    // Handle update form submission
+    @PostMapping("/update")
+    public String updateAnimal(@ModelAttribute Animal animal) {
+        animalService.saveAnimal(animal);
+        return "redirect:/animals/" + animal.getAnimalId();
     }
 
+    // Initialize test data
+    @GetMapping("/init-data")
+    public String initializeData() {
+        animalService.initializeTestData();
+        return "redirect:/animals";
+    }
+
+    // Clear all data
+    @GetMapping("/clear-data")
+    public String clearAllData() {
+        animalService.deleteAllAnimals();
+        return "redirect:/animals";
+    }
+
+    @GetMapping("/about")
+    public String showAbout() {
+        return "about";
+    }
+
+    // Handle animal deletion
+    @GetMapping("/delete/{id}")
+    public String deleteAnimal(@PathVariable Long id) {
+        animalService.deleteAnimal(id);
+        return "redirect:/animals";
+    }
+
+    // Handle search by habitat
+    @PostMapping("/search-habitat")
+    public String searchByHabitat(@RequestParam String habitat, Model model) {
+        List<Animal> animals = animalService.searchByHabitat(habitat);
+        model.addAttribute("animalsList", animals);
+        model.addAttribute("searchTerm", habitat);
+        return "animal-list";
+    }
+
+    // Handle search by name
     @GetMapping("/search")
-    public List<Animal> getAnimalsByNameContains(@RequestParam String name) {
-        return animalService.getAnimalsByNameContains(name);
+    public String searchByName(@RequestParam String name, Model model) {
+        List<Animal> animals = animalService.searchByName(name);
+        model.addAttribute("animalsList", animals);
+        model.addAttribute("searchTerm", name);
+        return "animal-list";
+    }
+
+    // Change this method in your AnimalController
+    @GetMapping("/category")
+    public String searchByFavoriteFood(@RequestParam String favoriteFood, Model model) {
+        List<Animal> animals = animalService.searchByFavoriteFood(favoriteFood);
+        model.addAttribute("animalsList", animals);
+        model.addAttribute("searchTerm", favoriteFood);
+        return "animal-list";
     }
 }
